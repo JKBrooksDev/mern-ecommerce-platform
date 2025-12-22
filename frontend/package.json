@@ -32,7 +32,6 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^6.30.0",
     "react-scripts": "^5.0.1",
-    "react-swipeable-views": "^0.14.0",
     "react-toastify": "^11.0.5",
     "styled-components": "^6.1.16",
     "web-vitals": "^4.2.4"
