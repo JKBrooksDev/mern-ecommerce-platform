@@ -1,3 +1,6 @@
+require("dotenv").config({ path: require("path").resolve(__dirname, "../.env") });
+
+const mongoose = require("mongoose");
 const {seedBrand}=require("./Brand")
 const {seedCategory}=require("./Category")
 const {seedProduct}=require("./Product")
@@ -24,6 +27,9 @@ const seedData=async()=>{
         await seedOrder()
 
         console.log('Seed completed..');
+
+        // 🔥 Close the connection so Node exits cleanly 
+        await mongoose.connection.close(); console.log("Connection closed. Exiting...");
     } catch (error) {
         console.log(error);
     }
