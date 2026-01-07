@@ -31,7 +31,10 @@ export const OtpVerfication = () => {
     },[loggedInUser])
 
     const handleSendOtp=()=>{
-        const data={user:loggedInUser?._id}
+        // old code
+        // const data={user:loggedInUser?._id}
+        // new code
+        const data = { userId: loggedInUser?._id }
         dispatch(resendOtpAsync(data))
     }
     
