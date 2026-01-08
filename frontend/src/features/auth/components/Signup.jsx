@@ -53,11 +53,26 @@ export const Signup = () => {
   },[status])
 
   // this function handles signup and dispatches the signup action with credentails that api requires
-  const handleSignup=(data)=>{
-    const cred={...data}
-    delete cred.confirmPassword
-    dispatch(signupAsync(cred))
+  // const handleSignup=(data)=>{
+  //   const cred={...data}
+  //   delete cred.confirmPassword
+  //   dispatch(signupAsync(cred))
+  // }
+  const handleSignup = async (data) => {
+  const cred = { ...data }
+  delete cred.confirmPassword
+
+  try {
+    const res = await dispatch(signupAsync(cred)).unwrap()
+
+    // ⭐ Store userId for OTP page
+    localStorage.setItem("userIdForVerification", res.userId)
+
+    navigate("/verify-otp")
+  } catch (err) {
+    toast.error(err.message)
   }
+}
 
   return (
     <Stack width={'100vw'} height={'100vh'} flexDirection={'row'} sx={{overflowY:"hidden"}}>
