@@ -1,27 +1,26 @@
-const nodemailer = require("nodemailer");
+const axios = require("axios");
 
 exports.sendMail = async (to, subject, html) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+    const response = await axios.post(
+      "https://api.resend.com/emails",
+      {
+        from: "MERN Shop <onboarding@resend.dev>",
+        to,
+        subject,
+        html,
       },
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to,
-      subject,
-      html,
-    });
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     return true;
   } catch (error) {
-    console.log("Nodemailer error:", error);
+    console.log("Resend error:", error.response?.data || error.message);
     throw new Error("Failed to send email");
   }
 };
