@@ -16,7 +16,6 @@ import {
   Typography,
   useMediaQuery,
   Button,
-  Paper,
 } from "@mui/material";
 import {
   addToCartAsync,
@@ -33,7 +32,7 @@ import {
 } from "../../review/ReviewSlice";
 import { Reviews } from "../../review/components/Reviews";
 import { toast } from "react-toastify";
-import { MotionConfig } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import FavoriteBorder from "@mui/icons-material/FavoriteBorder";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import CachedOutlinedIcon from "@mui/icons-material/CachedOutlined";
@@ -48,20 +47,10 @@ import {
   selectWishlistItems,
 } from "../../wishlist/WishlistSlice";
 import { useTheme } from "@mui/material";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-// import SwipeableViews from 'react-swipeable-views';
-// import { autoPlay } from 'react-swipeable-views-utils';
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules";
-import "swiper/css";
-import MobileStepper from "@mui/material/MobileStepper";
-// import Lottie from 'lottie-react'
 import loadingAnimation from "../../../assets/animations/infinite-spinner.svg";
 
 const SIZES = ["XS", "S", "M", "L", "XL"];
 const COLORS = ["#020202", "#F6F6F6", "#B82222", "#BEA9A9", "#E2BB8D"];
-// const AutoPlaySwipeableViews = autoPlay(SwipeableViews);
 
 export const ProductDetails = () => {
   const { id } = useParams();
@@ -101,12 +90,16 @@ export const ProductDetails = () => {
     0
   );
   const totalReviews = reviews.length;
-  const averageRating = parseInt(Math.ceil(totalReviewRating / totalReviews));
+  const averageRating =
+    totalReviews === 0
+      ? 0
+      : parseInt(Math.ceil(totalReviewRating / totalReviews));
 
   const wishlistItemAddStatus = useSelector(selectWishlistItemAddStatus);
   const wishlistItemDeleteStatus = useSelector(selectWishlistItemDeleteStatus);
 
   const navigate = useNavigate();
+
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -119,7 +112,7 @@ export const ProductDetails = () => {
       dispatch(fetchProductByIdAsync(id));
       dispatch(fetchReviewsByProductIdAsync(id));
     }
-  }, [id]);
+  }, [id, dispatch]);
 
   useEffect(() => {
     if (cartItemAddStatus === "fulfilled") {
@@ -168,7 +161,7 @@ export const ProductDetails = () => {
       dispatch(resetWishlistItemAddStatus());
       dispatch(resetCartItemAddStatus());
     };
-  }, []);
+  }, [dispatch]);
 
   const handleAddToCart = () => {
     const item = { user: loggedInUser._id, product: id, quantity };
@@ -197,24 +190,13 @@ export const ProductDetails = () => {
       const data = { user: loggedInUser?._id, product: id };
       dispatch(createWishlistItemAsync(data));
     } else if (!e.target.checked) {
-      const index = wishlistItems.findIndex((item) => item.product._id === id);
-      dispatch(deleteWishlistItemByIdAsync(wishlistItems[index]._id));
+      const index = wishlistItems.findIndex(
+        (item) => item.product._id === id
+      );
+      if (index !== -1) {
+        dispatch(deleteWishlistItemByIdAsync(wishlistItems[index]._id));
+      }
     }
-  };
-
-  const [activeStep, setActiveStep] = React.useState(0);
-  const maxSteps = product?.images.length;
-
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  };
-
-  const handleStepChange = (step) => {
-    setActiveStep(step);
   };
 
   return (
@@ -230,17 +212,19 @@ export const ProductDetails = () => {
             rowGap: "2rem",
           }}
         >
-          {(productFetchStatus || reviewFetchStatus) === "pending" ? (
+          {(productFetchStatus === "pending" ||
+            reviewFetchStatus === "pending") && (
             <Stack
               width={is500 ? "35vh" : "25rem"}
               height={"calc(100vh - 4rem)"}
               justifyContent={"center"}
               alignItems={"center"}
             >
-              {/* <Lottie animationData={loadingAnimation}/> */}
-              <img src={loadingAnimation} alt="" />
+              <img src={loadingAnimation} alt="Loading" />
             </Stack>
-          ) : (
+          )}
+
+          {product && (
             <Stack>
               {/* product details */}
               <Stack
@@ -263,156 +247,70 @@ export const ProductDetails = () => {
                     height: "100%",
                   }}
                 >
-                  {/* image selection */}
+                  {/* image selection (thumbnails) */}
                   {!is1420 && (
                     <Stack
                       sx={{
                         display: "flex",
                         rowGap: "1.5rem",
                         height: "100%",
-                        overflowY: "scroll",
+                        overflowY: "auto",
                       }}
                     >
-                      {product &&
-                        product.images.map((image, index) => (
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 1 }}
-                            style={{ width: "200px", cursor: "pointer" }}
-                            onClick={() => setSelectedImageIndex(index)}
-                          >
-                            <img
-                              style={{ width: "100%", objectFit: "contain" }}
-                              src={image}
-                              alt={`${product.title} image`}
-                            />
-                          </motion.div>
-                        ))}
+                      {product.images.map((image, index) => (
+                        <motion.div
+                          key={index}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 1 }}
+                          style={{
+                            width: "120px",
+                            cursor: "pointer",
+                            border:
+                              selectedImageIndex === index
+                                ? `2px solid ${theme.palette.primary.main}`
+                                : "1px solid #e0e0e0",
+                            borderRadius: "8px",
+                            padding: "4px",
+                            backgroundColor: "white",
+                          }}
+                          onClick={() => setSelectedImageIndex(index)}
+                        >
+                          <img
+                            style={{
+                              width: "100%",
+                              objectFit: "contain",
+                              aspectRatio: "1 / 1",
+                            }}
+                            src={image}
+                            alt={`${product.title} thumbnail ${index + 1}`}
+                          />
+                        </motion.div>
+                      ))}
                     </Stack>
                   )}
 
                   {/* selected image */}
                   <Stack mt={is480 ? "0rem" : "5rem"}>
-                    {is1420 ? (
-                      <Stack width={is480 ? "100%" : is990 ? "400px" : "500px"}>
-                        <Swiper
-                          modules={[Autoplay]}
-                          autoplay={{
-                            delay: 3000,
-                            disableOnInteraction: false,
-                          }}
-                          onSlideChange={(swiper) =>
-                            handleStepChange(swiper.activeIndex)
-                          }
-                          initialSlide={activeStep}
-                          direction={theme.direction === "rtl" ? "rtl" : "ltr"}
-                          spaceBetween={0}
-                          slidesPerView={1}
-                          style={{ width: "100%", height: "100%" }}
-                        >
-                          {product?.images.map((image, index) => (
-                            <SwiperSlide key={index}>
-                              <div style={{ width: "100%", height: "100%" }}>
-                                {Math.abs(activeStep - index) <= 2 ? (
-                                  <Box
-                                    component="img"
-                                    sx={{
-                                      width: "100%",
-                                      objectFit: "contain",
-                                      overflow: "hidden",
-                                      aspectRatio: 1 / 1,
-                                    }}
-                                    src={image}
-                                    alt={product?.title}
-                                  />
-                                ) : null}
-                              </div>
-                            </SwiperSlide>
-                          ))}
-                        </Swiper>
-                        <Swiper
-                          modules={[Autoplay]}
-                          autoplay={{
-                            delay: 3000,
-                            disableOnInteraction: false,
-                          }}
-                          onSlideChange={(swiper) =>
-                            handleStepChange(swiper.activeIndex)
-                          }
-                          initialSlide={activeStep}
-                          direction={theme.direction === "rtl" ? "rtl" : "ltr"}
-                          spaceBetween={0}
-                          slidesPerView={1}
-                          style={{ width: "100%", height: "100%" }}
-                        >
-                          {product?.images.map((image, index) => (
-                            <SwiperSlide key={index}>
-                              <div style={{ width: "100%", height: "100%" }}>
-                                {Math.abs(activeStep - index) <= 2 ? (
-                                  <Box
-                                    component="img"
-                                    sx={{
-                                      width: "100%",
-                                      objectFit: "contain",
-                                      overflow: "hidden",
-                                      aspectRatio: 1 / 1,
-                                    }}
-                                    src={image}
-                                    alt={product?.title}
-                                  />
-                                ) : null}
-                              </div>
-                            </SwiperSlide>
-                          ))}
-                        </Swiper>
-
-                        <MobileStepper
-                          steps={maxSteps}
-                          position="static"
-                          activeStep={activeStep}
-                          nextButton={
-                            <Button
-                              size="small"
-                              onClick={handleNext}
-                              disabled={activeStep === maxSteps - 1}
-                            >
-                              Next
-                              {theme.direction === "rtl" ? (
-                                <KeyboardArrowLeft />
-                              ) : (
-                                <KeyboardArrowRight />
-                              )}
-                            </Button>
-                          }
-                          backButton={
-                            <Button
-                              size="small"
-                              onClick={handleBack}
-                              disabled={activeStep === 0}
-                            >
-                              {theme.direction === "rtl" ? (
-                                <KeyboardArrowRight />
-                              ) : (
-                                <KeyboardArrowLeft />
-                              )}
-                              Back
-                            </Button>
-                          }
-                        />
-                      </Stack>
-                    ) : (
-                      <div style={{ width: "100%" }}>
-                        <img
-                          style={{
-                            width: "100%",
-                            objectFit: "contain",
-                            aspectRatio: 1 / 1,
-                          }}
-                          src={product?.images[selectedImageIndex]}
-                          alt={`${product?.title} image`}
-                        />
-                      </div>
-                    )}
+                    <Stack
+                      width={is480 ? "100%" : is990 ? "400px" : "500px"}
+                      sx={{
+                        borderRadius: "12px",
+                        border: "1px solid #e0e0e0",
+                        overflow: "hidden",
+                        backgroundColor: "white",
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        sx={{
+                          width: "100%",
+                          objectFit: "contain",
+                          aspectRatio: "1 / 1",
+                        }}
+                        src={product.images[selectedImageIndex]}
+                        alt={`${product.title} image`}
+                      />
+                    </Stack>
                   </Stack>
                 </Stack>
 
@@ -422,7 +320,7 @@ export const ProductDetails = () => {
                   <Stack rowGap={".5rem"}>
                     {/* title */}
                     <Typography variant="h4" fontWeight={600}>
-                      {product?.title}
+                      {product.title}
                     </Typography>
 
                     {/* rating */}
@@ -437,43 +335,42 @@ export const ProductDetails = () => {
                     >
                       <Rating value={averageRating} readOnly />
                       <Typography>
-                        ({" "}
+                        (
                         {totalReviews === 0
                           ? "No reviews"
                           : totalReviews === 1
                           ? `${totalReviews} Review`
-                          : `${totalReviews} Reviews`}{" "}
+                          : `${totalReviews} Reviews`}
                         )
                       </Typography>
                       <Typography
                         color={
-                          product?.stockQuantity <= 10
+                          product.stockQuantity <= 10
                             ? "error"
-                            : product?.stockQuantity <= 20
+                            : product.stockQuantity <= 20
                             ? "orange"
                             : "green"
                         }
                       >
-                        {product?.stockQuantity <= 10
-                          ? `Only ${product?.stockQuantity} left`
-                          : product?.stockQuantity <= 20
+                        {product.stockQuantity <= 10
+                          ? `Only ${product.stockQuantity} left`
+                          : product.stockQuantity <= 20
                           ? "Only few left"
                           : "In Stock"}
                       </Typography>
                     </Stack>
 
                     {/* price */}
-                    <Typography variant="h5">${product?.price}</Typography>
+                    <Typography variant="h5">${product.price}</Typography>
                   </Stack>
 
                   {/* description */}
                   <Stack rowGap={".8rem"}>
-                    <Typography>{product?.description}</Typography>
+                    <Typography>{product.description}</Typography>
                     <hr />
                   </Stack>
 
                   {/* color, size and add-to-cart */}
-
                   {!loggedInUser?.isAdmin && (
                     <Stack sx={{ rowGap: "1.3rem" }} width={"fit-content"}>
                       {/* colors */}
@@ -490,12 +387,13 @@ export const ProductDetails = () => {
                         >
                           {COLORS.map((color, index) => (
                             <div
+                              key={index}
                               style={{
                                 backgroundColor: "white",
                                 border:
                                   selectedColorIndex === index
-                                    ? `1px solid ${theme.palette.primary.dark}`
-                                    : "",
+                                    ? `2px solid ${theme.palette.primary.dark}`
+                                    : "1px solid #e0e0e0",
                                 width: is340 ? "40px" : "50px",
                                 height: is340 ? "40px" : "50px",
                                 display: "flex",
@@ -511,10 +409,11 @@ export const ProductDetails = () => {
                                   height: "40px",
                                   border:
                                     color === "#F6F6F6"
-                                      ? "1px solid grayText"
+                                      ? "1px solid gray"
                                       : "",
                                   backgroundColor: color,
                                   borderRadius: "100%",
+                                  cursor: "pointer",
                                 }}
                               ></div>
                             </div>
@@ -536,22 +435,23 @@ export const ProductDetails = () => {
                         >
                           {SIZES.map((size) => (
                             <motion.div
+                              key={size}
                               onClick={() => handleSizeSelect(size)}
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 1 }}
                               style={{
                                 border:
                                   selectedSize === size
-                                    ? ""
-                                    : "1px solid grayText",
+                                    ? "none"
+                                    : "1px solid gray",
                                 borderRadius: "8px",
-                                width: "30px",
-                                height: "30px",
+                                minWidth: "40px",
+                                height: "40px",
                                 display: "flex",
                                 justifyContent: "center",
                                 alignItems: "center",
                                 cursor: "pointer",
-                                padding: "1.2rem",
+                                padding: "0.5rem 1rem",
                                 backgroundColor:
                                   selectedSize === size
                                     ? "#DB4444"
@@ -559,7 +459,7 @@ export const ProductDetails = () => {
                                 color: selectedSize === size ? "white" : "",
                               }}
                             >
-                              <p>{size}</p>
+                              <p style={{ margin: 0 }}>{size}</p>
                             </motion.div>
                           ))}
                         </Stack>
@@ -571,7 +471,7 @@ export const ProductDetails = () => {
                         columnGap={is387 ? ".3rem" : "1.5rem"}
                         width={"100%"}
                       >
-                        {/* qunatity */}
+                        {/* quantity */}
                         <Stack
                           flexDirection={"row"}
                           alignItems={"center"}
@@ -586,11 +486,12 @@ export const ProductDetails = () => {
                               style={{
                                 padding: "10px 15px",
                                 fontSize: "1.050rem",
-                                backgroundColor: "",
+                                backgroundColor: "white",
                                 color: "black",
                                 outline: "none",
                                 border: "1px solid black",
                                 borderRadius: "8px",
+                                cursor: "pointer",
                               }}
                             >
                               -
@@ -614,6 +515,7 @@ export const ProductDetails = () => {
                                 outline: "none",
                                 border: "none",
                                 borderRadius: "8px",
+                                cursor: "pointer",
                               }}
                             >
                               +
@@ -632,6 +534,7 @@ export const ProductDetails = () => {
                               outline: "none",
                               border: "none",
                               borderRadius: "8px",
+                              cursor: "pointer",
                             }}
                             onClick={() => navigate("/cart")}
                           >
@@ -650,6 +553,7 @@ export const ProductDetails = () => {
                               outline: "none",
                               border: "none",
                               borderRadius: "8px",
+                              cursor: "pointer",
                             }}
                           >
                             Add To Cart
@@ -659,7 +563,7 @@ export const ProductDetails = () => {
                         {/* wishlist */}
                         <motion.div
                           style={{
-                            border: "1px solid grayText",
+                            border: "1px solid gray",
                             borderRadius: "4px",
                             display: "flex",
                             justifyContent: "center",
@@ -668,7 +572,7 @@ export const ProductDetails = () => {
                         >
                           <Checkbox
                             checked={isProductAlreadyinWishlist}
-                            onChange={(e) => handleAddRemoveFromWishlist(e)}
+                            onChange={handleAddRemoveFromWishlist}
                             icon={<FavoriteBorder />}
                             checkedIcon={<Favorite sx={{ color: "red" }} />}
                           />
@@ -683,7 +587,7 @@ export const ProductDetails = () => {
                     sx={{
                       justifyContent: "center",
                       alignItems: "center",
-                      border: "1px grayText solid",
+                      border: "1px gray solid",
                       borderRadius: "7px",
                     }}
                   >
@@ -693,7 +597,7 @@ export const ProductDetails = () => {
                       alignItems={"center"}
                       columnGap={"1rem"}
                       width={"100%"}
-                      justifyContent={"flex-sart"}
+                      justifyContent={"flex-start"}
                     >
                       <Box>
                         <LocalShippingOutlinedIcon />
@@ -701,7 +605,7 @@ export const ProductDetails = () => {
                       <Stack>
                         <Typography>Free Delivery</Typography>
                         <Typography>
-                          Enter your postal for delivery availabity
+                          Enter your postal for delivery availability
                         </Typography>
                       </Stack>
                     </Stack>
